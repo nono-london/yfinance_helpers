@@ -1,0 +1,25 @@
+pandas
+numpy
+wheel
+yfinance
+
+# requirements for setup
+# https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f
+# https://docs.python.org/3.7/distutils/setupscript.html
+twine
+setuptools
+
+# commands for setup
+# python setup.py bdist_wheel
+# install wheel commands
+# pip install /path/to/wheelfile.whl
+
+# test commands:
+# python setup.py pytest
+pytest
+pytest-runner
+
+# pip install -r requirements.txt
+# pip install -r requirements.txt --upgrade
+# python -m venv .venv
+# python.exe -m pip install --upgrade pip
