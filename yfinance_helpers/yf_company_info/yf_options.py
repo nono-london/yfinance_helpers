@@ -1,6 +1,6 @@
 import pandas as pd
 
-from yfinance_helpers.yf_connectors import YFinanceConnectWithTicker
+from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
 pd.set_option('display.max_columns', None)
 
@@ -12,7 +12,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
         print("#" * 20, f"Option Chain for ticker {self.ticker}", "#" * 20)
-        expiries: tuple = self.yahoo_connector_ticker.options
+        expiries: tuple = self.yf_ticker_connector.options
         if len(expiries) == 0:
             print(f"Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             print("#" * 50)
@@ -29,7 +29,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
     def get_options_chain_per_expiry(self, option_expiry: str):
         try:
-            option_chain = self.yahoo_connector_ticker.option_chain(date=option_expiry)
+            option_chain = self.yf_ticker_connector.option_chain(date=option_expiry)
         except TypeError:
             print(f"Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             print("#" * 50)

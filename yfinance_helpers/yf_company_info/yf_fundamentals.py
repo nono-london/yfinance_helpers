@@ -2,14 +2,14 @@ from datetime import datetime
 
 import pandas as pd
 
-from yfinance_helpers.yf_connectors import YFinanceConnectWithTicker
+from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
 pd.set_option('display.max_columns', None)
 
 
 class YahooFundamentals(YFinanceConnectWithTicker):
-    def __init__(self, yahoo_ticker: str):
-        super().__init__(yahoo_ticker)
+    def __init__(self, yahoo_ticker: str, yf_ticker_connector=None):
+        super().__init__(yahoo_ticker=yahoo_ticker, yf_ticker_connector=yf_ticker_connector)
 
         self.number_of_employee: int = None
         self.shares_outstanding: int = None
@@ -30,7 +30,7 @@ class YahooFundamentals(YFinanceConnectWithTicker):
         self.average_10_days_volume: int = None
 
     def get_fundamentals(self):
-        ticker_info: dict = self.yahoo_connector_ticker.get_info()
+        ticker_info: dict = self.yf_ticker_connector.get_info()
 
         self.number_of_employee = self._get_fundamental_from_ticker_info(ticker_info, 'fullTimeEmployees')
         self.website = self._get_fundamental_from_ticker_info(ticker_info, 'website')
@@ -54,7 +54,7 @@ class YahooFundamentals(YFinanceConnectWithTicker):
         self.last_dividend_ex_date = self._convert_unix_date_to_datetime(
             self._get_fundamental_from_ticker_info(ticker_info, 'exDividendDate')
         )
-        self.isin_code = self.yahoo_connector_ticker.isin
+        self.isin_code = self.yf_ticker_connector.isin
         self.print_class_variables()
         return vars(self)
 
