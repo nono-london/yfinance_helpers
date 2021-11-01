@@ -74,5 +74,5 @@ class YahooFundamentals(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooFundamentals(yahoo_ticker='sgfy')
+    my_yahoo = YahooFundamentals(yahoo_ticker='fgp.l')
     print(my_yahoo.get_fundamentals())

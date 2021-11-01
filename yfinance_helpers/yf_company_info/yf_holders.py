@@ -25,5 +25,5 @@ class YahooCompanyHolders(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooCompanyHolders(yahoo_ticker='sgfy')
+    my_yahoo = YahooCompanyHolders(yahoo_ticker='fgp.l')
     print(my_yahoo.get_holders())

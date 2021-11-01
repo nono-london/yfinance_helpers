@@ -22,5 +22,5 @@ class YahooAnalystRecommendation(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooAnalystRecommendation(yahoo_ticker='sgfy')
+    my_yahoo = YahooAnalystRecommendation(yahoo_ticker='fgp.l')
     print(my_yahoo.get_analyst_recommendations())

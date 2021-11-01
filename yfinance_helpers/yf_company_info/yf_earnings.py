@@ -18,5 +18,5 @@ class YahooEarningsAnnouncement(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooEarningsAnnouncement(yahoo_ticker='sgfy')
+    my_yahoo = YahooEarningsAnnouncement(yahoo_ticker='fgp.l')
     print(my_yahoo.get_next_earnings())
