@@ -27,7 +27,7 @@ class YahooFinancials(YFinanceConnectWithTicker):
     def _calculate_interest_coverage_ratio(self, income_statements_df: pd.DataFrame) -> pd.DataFrame:
         ebit = income_statements_df.loc['Ebit', :].abs()
         interest_expense = income_statements_df.loc['Interest Expense', :].abs()
-        interest_coverage_ratio = ebit.divide(interest_expense).astype(int)
+        interest_coverage_ratio = ebit.divide(interest_expense).astype(float).round(1)
         interest_coverage_ratio.name = "interest_coverage_ratio"
         income_statements_df = income_statements_df.append(interest_coverage_ratio)
         if (income_statements_df.loc["interest_coverage_ratio",:]<self.debt_coverage_lower_limit).any():
@@ -77,7 +77,7 @@ class YahooFinancials(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooFinancials(yahoo_ticker='stck.l')
+    my_yahoo = YahooFinancials(yahoo_ticker='MKS.l')
     # print(my_yahoo.get_yearly_income_statements(summarize_account=False))
     print(my_yahoo.get_quarterly_income_statements(summarize_account=False))
     # print(my_yahoo.get_quarterly_balance_sheet(summarize_account=False))
