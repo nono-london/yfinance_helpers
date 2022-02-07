@@ -2,13 +2,15 @@ pandas
 numpy
 wheel
 yfinance
+psycopg2
+asyncpg
 
 # requirements for setup
 # https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f
 # https://docs.python.org/3.7/distutils/setupscript.html
 twine
 setuptools
-
+\\thinkcentre\F_usb_buffalo\Python\own_wheels\postgresql_helpers-0.0.0.4-py3-none-any.whl
 # commands for setup
 # python setup.py bdist_wheel
 # install wheel commands
@@ -18,7 +20,7 @@ setuptools
 # python setup.py pytest
 pytest
 pytest-runner
-
+pyinstaller
 # pip install -r requirements.txt
 # pip install -r requirements.txt --upgrade
 # python -m venv .venv

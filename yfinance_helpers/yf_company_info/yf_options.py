@@ -1,6 +1,6 @@
 import pandas as pd
-
 from postgresql_helpers.mdb_classes.postgres_class import PostGresConnector
+
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
 pd.set_option('display.max_columns', None)
@@ -112,7 +112,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
 def update_ib_options_chain():
     mdb_getter = PostGresConnector(db_database_name='helios_finance')
-    sql_string:str="""
+    sql_string: str = """
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
                 FROM d_ticker a INNER JOIN d_security b USING(security_id)
                 WHERE a.is_active=True AND b.is_active=True
@@ -121,10 +121,20 @@ def update_ib_options_chain():
                 ORDER BY a.yahoo_ticker 
     
     """
-    results:list=mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
-    for ticker in results:
+    tickers: list = mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
+    results: list = list()
+    fails: list = list()
+    for ticker in tickers:
         my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
-        print(my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True))
+        temp_df: pd.DataFrame = my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
+        if temp_df is not None and len(temp_df) > 0:
+            results.append(dict(ticker=ticker, success=True))
+        else:
+            results.append(dict(ticker=ticker, success=False))
+            fails.append(dict(error=ticker))
+    fail_df = pd.DataFrame(fails)
+    fail_df.to_csv("error_with_options.csv", sep=',', index=False)
+    return results
 
 
 if __name__ == '__main__':
