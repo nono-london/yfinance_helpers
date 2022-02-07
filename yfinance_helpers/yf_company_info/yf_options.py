@@ -31,7 +31,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
                                   inplace=True, ignore_index=True)
 
         result_df = self._reformat_option_chain_columns(result_df, select_volume_over=select_volume_over)
-        self.upload_to_mdb(ticker=self.ticker, options_df=result_df,upload_datetime=datetime.utcnow())
+        self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_datetime=datetime.utcnow())
 
         return result_df
 
@@ -49,8 +49,6 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         put_df['call_put'] = 'Put'
         result_df = call_df.append(put_df, ignore_index=True)
         result_df['expiry'] = option_expiry
-
-
 
         return result_df
 
@@ -100,7 +98,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         
         """
         for index, row in options_df.iterrows():
-            sql_variables: tuple = (upload_datetime,row['last_trade_date'],
+            sql_variables: tuple = (upload_datetime, row['last_trade_date'],
                                     row['strike'], row['bid'], row['ask'], row['last_price'], row['volume'],
                                     row['open_interest'], row['implied_volatility'],
                                     row['currency'], row['call_put'], row['expiry'],
