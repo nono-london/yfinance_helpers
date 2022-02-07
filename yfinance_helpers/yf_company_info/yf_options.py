@@ -110,7 +110,26 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         self.mdb_upper.close_connection()
 
 
+def update_ib_options_chain():
+    mdb_getter = PostGresConnector(db_database_name='helios_finance')
+    sql_string:str="""
+                    SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
+                FROM d_ticker a INNER JOIN d_security b USING(security_id)
+                WHERE a.is_active=True AND b.is_active=True
+                        AND b.security_type NOT IN ('ETF', 'Currency')
+                        AND a.yahoo_ticker NOT LIKE ('%.%')
+                ORDER BY a.yahoo_ticker 
+    
+    """
+    results:list=mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
+    for ticker in results:
+        my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
+        print(my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True))
+
+
 if __name__ == '__main__':
+    update_ib_options_chain()
+    exit(0)
     my_yahoo = YahooOptionChain(yahoo_ticker='spy')
 
     print(my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True))
