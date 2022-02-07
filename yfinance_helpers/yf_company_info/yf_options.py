@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pandas as pd
 from postgresql_helpers.mdb_classes.postgres_class import PostGresConnector
 
@@ -110,7 +112,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         self.mdb_upper.close_connection()
 
 
-def update_ib_options_chain():
+def update_ib_options_chain(tickers: Optional[list] = None):
     mdb_getter = PostGresConnector(db_database_name='helios_finance')
     sql_string: str = """
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
@@ -121,7 +123,8 @@ def update_ib_options_chain():
                 ORDER BY a.yahoo_ticker 
     
     """
-    tickers: list = mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
+    if not tickers:
+        tickers: list = mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
     results: list = list()
     fails: list = list()
     for ticker in tickers:
@@ -138,7 +141,7 @@ def update_ib_options_chain():
 
 
 if __name__ == '__main__':
-    update_ib_options_chain()
+    update_ib_options_chain(tickers=['aapl'])
     exit(0)
     my_yahoo = YahooOptionChain(yahoo_ticker='spy')
 
