@@ -14,10 +14,12 @@ class YahooFinancials(YFinanceConnectWithTicker):
         self.debt_coverage_alert:bool=False
 
     def _clean_income_statement(self, income_statements_df: pd.DataFrame) -> pd.DataFrame:
-        if income_statements_df.loc["Ebit", :].equals(income_statements_df.loc["Operating Income", :]):
-            income_statements_df.drop(axis=0, index=["Operating Income"], inplace=True)
-        else:
-            print("Non identical: Ebit and Operating Income")
+        try:
+            if income_statements_df.loc["Ebit", :].equals(income_statements_df.loc["Operating Income", :]):
+                income_statements_df.drop(axis=0, index=["Operating Income"], inplace=True)
+        except KeyError as ex:
+            print(f"Non identical: Ebit and Operating Income\n"
+                  f"Error is {ex}")
         return income_statements_df
 
     def _calculate_ebitda(self, income_statements_df: pd.DataFrame) -> pd.DataFrame:
@@ -37,6 +39,8 @@ class YahooFinancials(YFinanceConnectWithTicker):
 
     def get_yearly_income_statements(self, summarize_account: bool = True):
         result_df: pd.DataFrame = self.yf_ticker_connector.get_financials()
+        result_df = self._clean_income_statement(income_statements_df=result_df)
+        result_df = self._calculate_interest_coverage_ratio(income_statements_df=result_df)
         if summarize_account:
             result_df = result_df.loc[self.summary_income_statement, :].copy()
         return result_df
@@ -44,9 +48,11 @@ class YahooFinancials(YFinanceConnectWithTicker):
     def get_quarterly_income_statements(self, summarize_account: bool = True):
         result_df: pd.DataFrame = self.yf_ticker_connector.quarterly_financials
         result_df = self._clean_income_statement(income_statements_df=result_df)
+        result_df = self._calculate_interest_coverage_ratio(income_statements_df=result_df)
+
 
         result_df.to_csv(path_or_buf='test.csv', sep=',')
-        result_df = self._calculate_interest_coverage_ratio(income_statements_df=result_df)
+
         if summarize_account:
             result_df = result_df.loc[self.summary_income_statement, :].copy()
         return result_df
@@ -77,8 +83,8 @@ class YahooFinancials(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooFinancials(yahoo_ticker='MKS.l')
-    # print(my_yahoo.get_yearly_income_statements(summarize_account=False))
+    my_yahoo = YahooFinancials(yahoo_ticker='stck.l')
+    print(my_yahoo.get_yearly_income_statements(summarize_account=False))
     print(my_yahoo.get_quarterly_income_statements(summarize_account=False))
     # print(my_yahoo.get_quarterly_balance_sheet(summarize_account=False))
     # print(my_yahoo.get_yearly_cash_flow(summarize_account=False))
