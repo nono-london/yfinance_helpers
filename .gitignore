@@ -2,3 +2,8 @@ idea
 .venv
 venv
 *.csv
+build
+dist
+yfinance_helpers.spec
+tests
+.pytest_cache
