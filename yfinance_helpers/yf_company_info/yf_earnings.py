@@ -14,12 +14,17 @@ class YahooEarningsAnnouncement(YFinanceConnectWithTicker):
     def get_next_earnings(self):
         if isinstance(self.yf_ticker_connector, Ticker):
             result_df: pd.DataFrame = self.yf_ticker_connector.get_calendar()
+            result_df = result_df.transpose(copy=True)
             result_df['yahoo_ticker'] = self.yf_ticker_connector.ticker
+            result_df.columns = [column.replace(" ", "_").lower() for column in result_df.columns]
+
         elif isinstance(self.yf_ticker_connector, Tickers):
             result_df: pd.DataFrame = pd.DataFrame()
             for ticker in self.yf_ticker_connector.tickers:
                 temp_df: pd.DataFrame = self.yf_ticker_connector.tickers[ticker].get_calendar()
+                temp_df = temp_df.transpose(copy=True)
                 temp_df['yahoo_ticker'] = ticker
+                temp_df.columns = [column.replace(" ", "_").lower() for column in temp_df.columns]
                 result_df = result_df.append(temp_df)
         else:
             return
@@ -35,3 +40,8 @@ if __name__ == '__main__':
                                                         'LNT', 'LVS', 'MCO', 'PANW', 'PEP', 'SO', 'SPLK',
                                                         'STZ', 'TGT', 'URI'])
     print(my_yahoo.get_next_earnings())
+    exit(0)
+
+    my_yahoo = YahooEarningsAnnouncement(yahoo_tickers='ABMD')
+    print(my_yahoo.get_next_earnings())
+    exit(0)
