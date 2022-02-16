@@ -31,5 +31,7 @@ class YahooEarningsAnnouncement(YFinanceConnectWithTicker):
 
 
 if __name__ == '__main__':
-    my_yahoo = YahooEarningsAnnouncement(yahoo_tickers=['anet', 'aapl'])
+    my_yahoo = YahooEarningsAnnouncement(yahoo_tickers=['ABMD', 'ALL', 'ANET', 'EQR', 'EXR', 'HSIC', 'IPGP',
+                                                        'LNT', 'LVS', 'MCO', 'PANW', 'PEP', 'SO', 'SPLK',
+                                                        'STZ', 'TGT', 'URI'])
     print(my_yahoo.get_next_earnings())
