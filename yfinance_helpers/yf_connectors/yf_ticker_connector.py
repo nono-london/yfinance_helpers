@@ -1,7 +1,7 @@
 from typing import Union, Optional
 
 import yfinance as yf
-from yfinance import Ticker
+from yfinance import Ticker, Tickers
 
 
 class YFinanceConnectWithTicker:
