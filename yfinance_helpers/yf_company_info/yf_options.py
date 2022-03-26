@@ -14,6 +14,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         super().__init__(yahoo_ticker)
         self.DATABASE_NAME: str = 'helios_finance'
         self.mdb_upper = PostGresConnector(db_database_name=self.DATABASE_NAME)
+        self.ticker=yahoo_ticker.upper()
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
@@ -96,8 +97,8 @@ class YahooOptionChain(YFinanceConnectWithTicker):
           FROM d_ticker
           WHERE yahoo_ticker=%s
 
-            ON CONFLICT DO NOTHING
-        
+        ON CONFLICT DO NOTHING
+
         """
         for index, row in options_df.iterrows():
             sql_variables: tuple = (upload_datetime, row['last_trade_date'],
@@ -141,7 +142,7 @@ def update_ib_options_chain(tickers: Optional[list] = None):
 
 
 if __name__ == '__main__':
-    update_ib_options_chain(tickers=['aapl'])
+    update_ib_options_chain(tickers=['SPY'])
     exit(0)
     my_yahoo = YahooOptionChain(yahoo_ticker='spy')
 
