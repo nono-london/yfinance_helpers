@@ -118,7 +118,7 @@ def update_ib_options_chain(tickers: Optional[list] = None):
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
                 FROM d_ticker a INNER JOIN d_security b USING(security_id)
                 WHERE a.is_active=True AND b.is_active=True
-                        AND b.security_type NOT IN ('ETF', 'Currency')
+                        AND b.security_type NOT IN ('Currency')
                         AND a.yahoo_ticker NOT LIKE ('%.%')
                 ORDER BY a.yahoo_ticker 
     
