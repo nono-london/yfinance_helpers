@@ -1,7 +1,8 @@
 from typing import Optional
 
 import pandas as pd
-from postgresql_helpers.mdb_classes.postgres_class import PostGresConnector
+from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
+import asyncio
 
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
@@ -13,8 +14,9 @@ class YahooOptionChain(YFinanceConnectWithTicker):
     def __init__(self, yahoo_ticker: str):
         super().__init__(yahoo_ticker)
         self.DATABASE_NAME: str = 'helios_finance'
-        self.mdb_upper = PostGresConnector(db_database_name=self.DATABASE_NAME)
+        self.mdb_upper = AsyncPostGresConnector(mdb_name=self.DATABASE_NAME)
         self.ticker=yahoo_ticker.upper()
+        self.upload_date:datetime.date=datetime.utcnow().date()
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
@@ -34,7 +36,9 @@ class YahooOptionChain(YFinanceConnectWithTicker):
                                   inplace=True, ignore_index=True)
 
         result_df = self._reformat_option_chain_columns(result_df, select_volume_over=select_volume_over)
-        self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_datetime=datetime.utcnow())
+        self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_date=self.upload_date)
+        asyncio.get_event_loop().run_until_complete(self.mdb_upper.close_connection())
+
 
         return result_df
 
@@ -76,45 +80,51 @@ class YahooOptionChain(YFinanceConnectWithTicker):
                         inplace=True)
         return options_df
 
-    def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_datetime: datetime):
+    def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_date: datetime.date):
         print(options_df)
 
         sql_string: str = """
         INSERT INTO t_histo_options(
-        ticker_id, upload_datetime, last_trade_datetime, 
-                    strike, bid, ask, last_price, volume, 
-                    open_interest, implied_volatility,
+                ticker_id, 
+                upload_date, last_trade_datetime, 
+                strike, bid, ask, last_price, volume, 
+                open_interest, implied_volatility,
                     currency, call_put, expiry
                     )
               
                 
-          SELECT  ticker_id, %s,
-                    %s, %s, 
-                    %s, %s, %s, %s,
-                    %s,%s,
-                    %s, %s,%s
+          SELECT  ticker_id, 
+            $1,$2, 
+            $3, $4, $5, $6, $7, 
+            $8, $9, 
+            $10, $11, $12
                  
           FROM d_ticker
-          WHERE yahoo_ticker=%s
+          WHERE yahoo_ticker=$13
 
-        ON CONFLICT DO NOTHING
-
+        ON CONFLICT ON CONSTRAINT "t_histo_options_ticker_id_upload_date_strike_expiry_call_pu_key"
+        DO UPDATE 
+        SET last_trade_datetime=EXCLUDED.last_trade_datetime, 
+            last_price=EXCLUDED.last_price,
+            volume=EXCLUDED.volume,
+            open_interest=EXCLUDED.open_interest,
+            implied_volatility=EXCLUDED.implied_volatility
         """
         for index, row in options_df.iterrows():
-            sql_variables: tuple = (upload_datetime, row['last_trade_date'],
+            sql_variables: tuple = (upload_date, row['last_trade_date'],
                                     row['strike'], row['bid'], row['ask'], row['last_price'], row['volume'],
                                     row['open_interest'], row['implied_volatility'],
-                                    row['currency'], row['call_put'], row['expiry'],
+                                    row['currency'], row['call_put'], datetime.strptime(row['expiry'],"%Y-%m-%d"),
                                     ticker,
                                     )
-            self.mdb_upper.execute_one_query(sql_query=sql_string,
+            asyncio.get_event_loop().run_until_complete(self.mdb_upper.execute_one_query(sql_query=sql_string,
                                              sql_variables=sql_variables,
-                                             close_connection_after=False)
-        self.mdb_upper.close_connection()
+                                            close_connection=False
+                                             ))
 
 
 def update_ib_options_chain(tickers: Optional[list] = None):
-    mdb_getter = PostGresConnector(db_database_name='helios_finance')
+    mdb_getter = AsyncPostGresConnector(mdb_name='helios_finance')
     sql_string: str = """
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
                 FROM d_ticker a INNER JOIN d_security b USING(security_id)
@@ -125,7 +135,8 @@ def update_ib_options_chain(tickers: Optional[list] = None):
     
     """
     if not tickers:
-        tickers: list = mdb_getter.fetch_all_query_as_pd_dataframe(sql_query=sql_string)['yahoo_ticker'].to_list()
+        ticker_df: pd.DataFrame = asyncio.get_event_loop().run_until_complete(mdb_getter.fetch_all_as_pd(sql_query=sql_string))
+        tickers:list = ticker_df['yahoo_ticker'].to_list()
     results: list = list()
     fails: list = list()
     for ticker in tickers:
@@ -142,7 +153,7 @@ def update_ib_options_chain(tickers: Optional[list] = None):
 
 
 if __name__ == '__main__':
-    update_ib_options_chain(tickers=['SPY'])
+    update_ib_options_chain(tickers=None)
     exit(0)
     my_yahoo = YahooOptionChain(yahoo_ticker='spy')
 
