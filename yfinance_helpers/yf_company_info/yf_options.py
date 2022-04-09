@@ -6,8 +6,8 @@ import asyncio
 
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
+from datetime import datetime, timedelta
 pd.set_option('display.max_columns', None)
-from datetime import datetime
 
 
 class YahooOptionChain(YFinanceConnectWithTicker):
@@ -16,7 +16,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         self.DATABASE_NAME: str = 'helios_finance'
         self.mdb_upper = AsyncPostGresConnector(mdb_name=self.DATABASE_NAME)
         self.ticker=yahoo_ticker.upper()
-        self.upload_date:datetime.date=datetime.utcnow().date()
+        self.upload_date:datetime.date=datetime.utcnow().date()-timedelta(days=1)
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
@@ -129,7 +129,7 @@ def update_ib_options_chain(tickers: Optional[list] = None):
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
                 FROM d_ticker a INNER JOIN d_security b USING(security_id)
                 WHERE a.is_active=True AND b.is_active=True
-                        AND b.security_type NOT IN ('Currency')
+                        AND b.security_type NOT IN ('Currency', 'Warrant',)
                         AND a.yahoo_ticker NOT LIKE ('%.%')
                 ORDER BY a.yahoo_ticker 
     
