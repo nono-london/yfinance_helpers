@@ -7,3 +7,4 @@ dist
 yfinance_helpers.spec
 tests
 .pytest_cache
+yfinance_helpers/downloads/*.csv
