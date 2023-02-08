@@ -95,7 +95,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         return options_df
 
     def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_date: datetime.date):
-        print(options_df)
+        print(f"* Uploading {len(options_df)} options to the database")
 
         sql_string: str = """
         INSERT INTO t_histo_options(
