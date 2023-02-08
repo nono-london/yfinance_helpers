@@ -68,10 +68,22 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
         put_df: pd.DataFrame = option_chain.puts
         put_df['call_put'] = 'Put'
-        result_df = pd.concat([call_df, put_df], ignore_index=True, )
-        result_df['expiry'] = option_expiry
+
+        if call_df.empty and not put_df.empty:
+            result_df = put_df
+        elif put_df.empty and not call_df.empty:
+            result_df = call_df
+        elif not put_df.empty and not call_df.empty:
+            result_df = pd.concat([call_df, put_df], ignore_index=True, )
+        else:
+            result_df = None
+
+        if result_df is not None:
+            result_df['expiry'] = option_expiry
 
         return result_df
+
+
 
     @staticmethod
     def _reformat_option_chain_columns(options_df: pd.DataFrame, select_volume_over: int = 0):
