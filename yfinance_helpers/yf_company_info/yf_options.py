@@ -39,7 +39,10 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             if temp_df is not None and not temp_df.empty:
                 result_df = pd.concat([result_df, temp_df], ignore_index=True)
 
-        if order_by_volumes and not result_df.empty:
+        if result_df.empty:
+            return result_df
+
+        if order_by_volumes:
             try:
                 result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
                                       inplace=True, ignore_index=True)
