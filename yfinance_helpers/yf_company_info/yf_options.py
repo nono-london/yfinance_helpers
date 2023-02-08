@@ -29,7 +29,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         result_df: pd.DataFrame = pd.DataFrame()
         for expiry in expiries:
             temp_df = self.get_options_chain_per_expiry(option_expiry=expiry)
-            if temp_df is not None:
+            if temp_df is not None and not temp_df.empty:
                 result_df = pd.concat([result_df, temp_df], ignore_index=True)
         if order_by_volumes >= 0:
             result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
