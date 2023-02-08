@@ -172,9 +172,9 @@ def update_ib_options_chain(tickers: Optional[list] = None):
         my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
         temp_df: pd.DataFrame = my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
         if temp_df is None:
-            results.append(dict(ticker=ticker, success=False))
+            results.append(dict(ticker=ticker, is_success=False))
         else:
-            results.append(dict(ticker=ticker, success=True))
+            results.append(dict(ticker=ticker, is_success=True))
 
     results_df = pd.DataFrame(results)
     save_path = Path(get_project_download_path(), "yf_option_chain_results.csv")
