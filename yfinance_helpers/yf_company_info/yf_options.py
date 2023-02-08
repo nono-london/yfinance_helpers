@@ -1,10 +1,12 @@
 import asyncio
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 
 from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
+from yfinance_helpers.app_config import get_project_download_path
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
 pd.set_option('display.max_columns', None)
@@ -175,13 +177,14 @@ def update_ib_options_chain(tickers: Optional[list] = None):
             results.append(dict(ticker=ticker, success=True))
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv("yf_option_chain_results.csv", sep=',', index=False)
+    save_path = Path(get_project_download_path(), "yf_option_chain_results.csv")
+    results_df.to_csv(save_path, sep=',', index=False)
     return results
 
 
 if __name__ == '__main__':
     update_ib_options_chain(tickers=None)
     exit(0)
-    my_yahoo = YahooOptionChain(yahoo_ticker='spy')
 
+    my_yahoo = YahooOptionChain(yahoo_ticker='spy')
     print(my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True))
