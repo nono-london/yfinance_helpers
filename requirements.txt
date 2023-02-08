@@ -13,6 +13,7 @@ bs4
 twine
 setuptools
 # \\thinkcentre\F_usb_buffalo\Python\own_wheels\postgresql_helpers-0.0.0.6-py3-none-any.whl
+
 # commands for setup
 # python setup.py bdist_wheel
 # install wheel commands
@@ -22,8 +23,12 @@ setuptools
 # python setup.py pytest
 pytest
 pytest-runner
-pyinstaller
-# pip install -r requirements.txt
-# pip install -r requirements.txt --upgrade
+
+pyinstaller; sys_platform == 'win32'
+
+
 # python -m venv .venv
 # python.exe -m pip install --upgrade pip
+
+# pip install -r requirements.txt
+# pip install -r requirements.txt --upgrade
