@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
-from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
 
+from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
 pd.set_option('display.max_columns', None)
@@ -38,9 +38,14 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             temp_df = self.get_options_chain_per_expiry(option_expiry=expiry)
             if temp_df is not None and not temp_df.empty:
                 result_df = pd.concat([result_df, temp_df], ignore_index=True)
-        if order_by_volumes >= 0:
-            result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
-                                  inplace=True, ignore_index=True)
+
+        if order_by_volumes and not result_df.empty:
+            try:
+                result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
+                                      inplace=True, ignore_index=True)
+            except Exception as ex:
+                print(f"Error while sorting by volume:\n"
+                      f"Error is: {ex}")
 
         result_df = self._reformat_option_chain_columns(result_df, select_volume_over=select_volume_over)
         self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_date=self.upload_date)
