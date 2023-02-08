@@ -20,7 +20,6 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
-        print("#" * 20, f"Option Chain for ticker {self.ticker}", "#" * 20)
         try:
             expiries: tuple = self.yf_ticker_connector.options
             print(f'* Found {len(expiries)} expiries for ticker: {self.ticker}')
@@ -82,8 +81,6 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             result_df['expiry'] = option_expiry
 
         return result_df
-
-
 
     @staticmethod
     def _reformat_option_chain_columns(options_df: pd.DataFrame, select_volume_over: int = 0):
@@ -165,17 +162,20 @@ def update_ib_options_chain(tickers: Optional[list] = None):
             mdb_getter.fetch_all_as_pd(sql_query=sql_string))
         tickers: list = ticker_df['yahoo_ticker'].to_list()
     results: list = list()
-    fails: list = list()
-    for ticker in tickers:
+
+    for index, ticker in enumerate(tickers, start=1):
+        print("#" * 20, f"Option Chain for ticker {ticker}", "#" * 20)
+        print(f"* {round(index / len(tickers) * 100, 1)} % done, {index} out of {len(tickers)} tickers")
+
         my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
         temp_df: pd.DataFrame = my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
-        if temp_df is not None and len(temp_df) > 0:
-            results.append(dict(ticker=ticker, success=True))
-        else:
+        if temp_df is None:
             results.append(dict(ticker=ticker, success=False))
-            fails.append(dict(error=ticker))
-    fail_df = pd.DataFrame(fails)
-    fail_df.to_csv("error_with_options.csv", sep=',', index=False)
+        else:
+            results.append(dict(ticker=ticker, success=True))
+
+    results_df = pd.DataFrame(results)
+    results_df.to_csv("yf_option_chain_results.csv", sep=',', index=False)
     return results
 
 
