@@ -23,6 +23,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         print("#" * 20, f"Option Chain for ticker {self.ticker}", "#" * 20)
         try:
             expiries: tuple = self.yf_ticker_connector.options
+            print(f'* Found {len(expiries)} expiries for ticker: {self.ticker}')
         except Exception as ex:
             print(f'Error while getting options for ticker: "{self.ticker}\n'
                   f'Error is: {ex}"')
@@ -30,8 +31,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             return None
 
         if len(expiries) == 0:
-            print(f"Yahoo doesn't provide an option chain for ticker: {self.ticker}")
-            print("#" * 50)
+            print(f"- Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             return None
         result_df: pd.DataFrame = pd.DataFrame()
         for expiry in expiries:
