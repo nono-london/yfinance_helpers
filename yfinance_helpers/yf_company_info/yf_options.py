@@ -40,7 +40,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
                 result_df = pd.concat([result_df, temp_df], ignore_index=True)
 
         if result_df.empty:
-            return result_df
+            return None
 
         if order_by_volumes:
             try:
