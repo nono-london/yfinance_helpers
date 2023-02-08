@@ -21,7 +21,14 @@ class YahooOptionChain(YFinanceConnectWithTicker):
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
         print("#" * 20, f"Option Chain for ticker {self.ticker}", "#" * 20)
-        expiries: tuple = self.yf_ticker_connector.options
+        try:
+            expiries: tuple = self.yf_ticker_connector.options
+        except Exception as ex:
+            print(f'Error while getting options for ticker: "{self.ticker}\n'
+                  f'Error is: {ex}"')
+            # Seems like there is a bug when no option are available
+            return None
+
         if len(expiries) == 0:
             print(f"Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             print("#" * 50)
