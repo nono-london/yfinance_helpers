@@ -12,7 +12,7 @@ bs4
 # https://docs.python.org/3.7/distutils/setupscript.html
 twine
 setuptools
-\\thinkcentre\F_usb_buffalo\Python\own_wheels\postgresql_helpers-0.0.0.6-py3-none-any.whl
+# \\thinkcentre\F_usb_buffalo\Python\own_wheels\postgresql_helpers-0.0.0.6-py3-none-any.whl
 # commands for setup
 # python setup.py bdist_wheel
 # install wheel commands

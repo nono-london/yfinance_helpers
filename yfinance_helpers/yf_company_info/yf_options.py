@@ -1,12 +1,12 @@
+import asyncio
+from datetime import datetime, timedelta
 from typing import Optional
 
 import pandas as pd
 from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
-import asyncio
 
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
-from datetime import datetime, timedelta
 pd.set_option('display.max_columns', None)
 
 
@@ -15,8 +15,8 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         super().__init__(yahoo_ticker)
         self.DATABASE_NAME: str = 'helios_finance'
         self.mdb_upper = AsyncPostGresConnector(mdb_name=self.DATABASE_NAME)
-        self.ticker=yahoo_ticker.upper()
-        self.upload_date:datetime.date=datetime.utcnow().date()-timedelta(days=1)
+        self.ticker = yahoo_ticker.upper()
+        self.upload_date: datetime.date = datetime.utcnow().date() - timedelta(days=1)
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
@@ -30,7 +30,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         for expiry in expiries:
             temp_df = self.get_options_chain_per_expiry(option_expiry=expiry)
             if temp_df is not None:
-                result_df = result_df.append(temp_df, ignore_index=True)
+                result_df = pd.concat([result_df, temp_df], ignore_index=True)
         if order_by_volumes >= 0:
             result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
                                   inplace=True, ignore_index=True)
@@ -38,7 +38,6 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         result_df = self._reformat_option_chain_columns(result_df, select_volume_over=select_volume_over)
         self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_date=self.upload_date)
         asyncio.get_event_loop().run_until_complete(self.mdb_upper.close_connection())
-
 
         return result_df
 
@@ -54,7 +53,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
         put_df: pd.DataFrame = option_chain.puts
         put_df['call_put'] = 'Put'
-        result_df = call_df.append(put_df, ignore_index=True)
+        result_df = pd.concat([call_df, put_df], ignore_index=True, )
         result_df['expiry'] = option_expiry
 
         return result_df
@@ -114,13 +113,13 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             sql_variables: tuple = (upload_date, row['last_trade_date'],
                                     row['strike'], row['bid'], row['ask'], row['last_price'], row['volume'],
                                     row['open_interest'], row['implied_volatility'],
-                                    row['currency'], row['call_put'], datetime.strptime(row['expiry'],"%Y-%m-%d"),
+                                    row['currency'], row['call_put'], datetime.strptime(row['expiry'], "%Y-%m-%d"),
                                     ticker,
                                     )
             asyncio.get_event_loop().run_until_complete(self.mdb_upper.execute_one_query(sql_query=sql_string,
-                                             sql_variables=sql_variables,
-                                            close_connection=False
-                                             ))
+                                                                                         sql_variables=sql_variables,
+                                                                                         close_connection=False
+                                                                                         ))
 
 
 def update_ib_options_chain(tickers: Optional[list] = None):
@@ -135,8 +134,9 @@ def update_ib_options_chain(tickers: Optional[list] = None):
     
     """
     if not tickers:
-        ticker_df: pd.DataFrame = asyncio.get_event_loop().run_until_complete(mdb_getter.fetch_all_as_pd(sql_query=sql_string))
-        tickers:list = ticker_df['yahoo_ticker'].to_list()
+        ticker_df: pd.DataFrame = asyncio.get_event_loop().run_until_complete(
+            mdb_getter.fetch_all_as_pd(sql_query=sql_string))
+        tickers: list = ticker_df['yahoo_ticker'].to_list()
     results: list = list()
     fails: list = list()
     for ticker in tickers:
