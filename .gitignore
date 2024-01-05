@@ -1,10 +1,14 @@
 .idea
 .venv
 venv
+.env
+
 *.csv
 build
 dist
 yfinance_helpers.spec
 tests
+.eggs
+yfinance_helpers.egg-info
 .pytest_cache
 yfinance_helpers/downloads/*.csv

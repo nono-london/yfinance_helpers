@@ -1,18 +1,20 @@
-pandas
-numpy
+# Utils
 wheel
+twine
+python-dotenv
+tqdm
+# Scrapping
 yfinance
-psycopg2
-asyncpg
 html5lib
 bs4
+# Data
+pandas
+numpy
+# Database
+git+https://github.com/nono-london/postgres_helpers.git
 
-# requirements for setup
-# https://medium.com/analytics-vidhya/how-to-create-a-python-library-7d5aea80cc3f
-# https://docs.python.org/3.7/distutils/setupscript.html
-twine
+# setup
 setuptools
-# \\thinkcentre\F_usb_buffalo\Python\own_wheels\postgresql_helpers-0.0.0.6-py3-none-any.whl
 
 # commands for setup
 # python setup.py bdist_wheel

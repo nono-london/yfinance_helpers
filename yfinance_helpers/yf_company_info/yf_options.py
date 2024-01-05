@@ -1,22 +1,25 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from dotenv import load_dotenv
+from postgres_helpers.postgres_async import PostgresConnectorAsync
+from tqdm import tqdm
 
-from postgresql_helpers.mdb_classes.async_postgres_class import AsyncPostGresConnector
 from yfinance_helpers.app_config import get_project_download_path
 from yfinance_helpers.yf_connectors.yf_ticker_connector import YFinanceConnectWithTicker
 
-pd.set_option('display.max_columns', None)
+logger = logging.getLogger(Path(__file__).name)
 
 
 class YahooOptionChain(YFinanceConnectWithTicker):
     def __init__(self, yahoo_ticker: str):
         super().__init__(yahoo_ticker)
         self.DATABASE_NAME: str = 'helios_finance'
-        self.mdb_upper = AsyncPostGresConnector(mdb_name=self.DATABASE_NAME)
+        self.mdb_upper = PostgresConnectorAsync(db_name=self.DATABASE_NAME)
         self.ticker = yahoo_ticker.upper()
         self.upload_date: datetime.date = datetime.utcnow().date() - timedelta(days=1)
 
@@ -24,15 +27,15 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         # https://aroussi.com/post/download-options-data
         try:
             expiries: tuple = self.yf_ticker_connector.options
-            print(f'* Found {len(expiries)} expiries for ticker: {self.ticker}')
+            logger.info(f'* Found {len(expiries)} expiries for ticker: {self.ticker}')
         except Exception as ex:
-            print(f'Error while getting options for ticker: "{self.ticker}\n'
-                  f'Error is: {ex}"')
+            logger.error(f'Error while getting options for ticker: "{self.ticker}, '
+                         f'Error is: {ex}"')
             # Seems like there is a bug when no option are available
             return None
 
         if len(expiries) == 0:
-            print(f"- Yahoo doesn't provide an option chain for ticker: {self.ticker}")
+            logger.info(f"- Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             return None
         result_df: pd.DataFrame = pd.DataFrame()
         for expiry in expiries:
@@ -48,8 +51,8 @@ class YahooOptionChain(YFinanceConnectWithTicker):
                 result_df.sort_values(by=['volume', 'call_put'], ascending=[False, True],
                                       inplace=True, ignore_index=True)
             except Exception as ex:
-                print(f"Error while sorting by volume:\n"
-                      f"Error is: {ex}")
+                logger.error(f"Error while sorting by volume, "
+                             f"Error is: {ex}")
 
         result_df = self._reformat_option_chain_columns(result_df, select_volume_over=select_volume_over)
         self.upload_to_mdb(ticker=self.ticker, options_df=result_df, upload_date=self.upload_date)
@@ -61,8 +64,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         try:
             option_chain = self.yf_ticker_connector.option_chain(date=option_expiry)
         except TypeError:
-            print(f"Yahoo doesn't provide an option chain for ticker: {self.ticker}")
-            print("#" * 50)
+            logger.warning(f"Handled Error: Yahoo doesn't provide an option chain for ticker: {self.ticker}")
             return None
         call_df: pd.DataFrame = option_chain.calls
         call_df['call_put'] = 'Call'
@@ -106,7 +108,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         return options_df
 
     def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_date: datetime.date):
-        print(f"* Uploading {len(options_df)} options to the database")
+        logger.info(f"* Uploading {len(options_df)} options to the database")
 
         sql_string: str = """
         INSERT INTO t_histo_options(
@@ -149,7 +151,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
 
 
 def update_ib_options_chain(tickers: Optional[list] = None):
-    mdb_getter = AsyncPostGresConnector(mdb_name='helios_finance')
+    mdb_getter = PostgresConnectorAsync(db_name='helios_finance')
     sql_string: str = """
                     SELECT UPPER(a.yahoo_ticker) "yahoo_ticker"
                 FROM d_ticker a INNER JOIN d_security b USING(security_id)
@@ -161,13 +163,15 @@ def update_ib_options_chain(tickers: Optional[list] = None):
     """
     if not tickers:
         ticker_df: pd.DataFrame = asyncio.get_event_loop().run_until_complete(
-            mdb_getter.fetch_all_as_pd(sql_query=sql_string))
+            mdb_getter.fetch_all_as_df(sql_query=sql_string))
         tickers: list = ticker_df['yahoo_ticker'].to_list()
     results: list = list()
 
-    for index, ticker in enumerate(tickers, start=1):
-        print("#" * 20, f"Option Chain for ticker {ticker}", "#" * 20)
-        print(f"* {round(index / len(tickers) * 100, 1)} % done, {index} out of {len(tickers)} tickers")
+    for index, ticker in tqdm(enumerate(tickers, start=1),
+                              desc="Uploading options volumes",
+                              total=len(tickers)):
+        logger.info(f'{"#" * 20} Option Chain for ticker {ticker}')
+        logger.info(f"* {round(index / len(tickers) * 100, 1)} % done, {index} out of {len(tickers)} tickers")
 
         my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
         temp_df: pd.DataFrame = my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
@@ -183,6 +187,8 @@ def update_ib_options_chain(tickers: Optional[list] = None):
 
 
 if __name__ == '__main__':
+    pd.set_option('display.max_columns', None)
+    load_dotenv()
     update_ib_options_chain(tickers=None)
     exit(0)
 
