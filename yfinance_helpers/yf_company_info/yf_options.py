@@ -2,7 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -22,19 +22,25 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         self.mdb_upper = PostgresConnectorAsync(db_name=self.DATABASE_NAME)
         self.ticker = yahoo_ticker.upper()
         self.upload_date: datetime.date = datetime.utcnow().date() - timedelta(days=1)
+        self.no_options_tickers: List[str] = []
 
     def get_all_option_chains(self, order_by_volumes: bool = True, select_volume_over: int = 0):
         # https://aroussi.com/post/download-options-data
         try:
             expiries: tuple = self.yf_ticker_connector.options
-        except Exception as ex:
-            logger.error(f'Error while getting options for ticker: "{self.ticker}, '
-                         f'Error is: {ex}"')
+        except TypeError as ex:
             # Seems like there is a bug when no option are available
+            logger.warning(f'Handled error: while getting options for ticker: "{self.ticker}, '
+                           f'Error is: {ex}"')
+        except Exception as ex:
+            logger.error(f'Unhandled error: while getting options for ticker: "{self.ticker}, '
+                         f'Error is: {ex}",'
+                         f'Error class is: {ex.__class__.__name__}')
             return None
 
         if len(expiries) == 0:
             logger.info(f"{self.ticker}: no option chain")
+            self.no_options_tickers.append(self.ticker)
             return None
         result_df: pd.DataFrame = pd.DataFrame()
         for expiry in expiries:
@@ -63,6 +69,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         try:
             option_chain = self.yf_ticker_connector.option_chain(date=option_expiry)
         except TypeError:
+            self.no_options_tickers.append(self.ticker)
             logger.warning(f"Handled Error: {self.ticker} no option chain")
             return None
         call_df: pd.DataFrame = option_chain.calls
@@ -107,7 +114,10 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         return options_df
 
     def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_date: datetime.date):
-        logger.info(f"{ticker} - uploading {len(options_df)} options")
+        if options_df is None or len(options_df) == 0:
+            logger.info(f"{ticker}: no data to upload")
+            return None
+        logger.info(f"{ticker}: uploading {len(options_df)} options")
 
         sql_string: str = """
         INSERT INTO t_histo_options(
@@ -165,7 +175,7 @@ def update_ib_options_chain(tickers: Optional[list] = None):
             mdb_getter.fetch_all_as_df(sql_query=sql_string))
         tickers: list = ticker_df['yahoo_ticker'].to_list()
     results: list = list()
-
+    no_option_tickers: List[str] = []
     for index, ticker in tqdm(enumerate(tickers, start=1),
                               desc="Uploading options volumes",
                               total=len(tickers)):
@@ -175,10 +185,12 @@ def update_ib_options_chain(tickers: Optional[list] = None):
             results.append(dict(ticker=ticker, is_success=False))
         else:
             results.append(dict(ticker=ticker, is_success=True))
-
+        # needs to be done differntly
+        no_option_tickers = no_option_tickers + yahoo_options.no_options_tickers
     results_df = pd.DataFrame(results)
     save_path = Path(get_project_download_path(), "yf_option_chain_results.csv")
     results_df.to_csv(save_path, sep=',', index=False)
+    logger.warning(f'Ticker with no options: {no_option_tickers}')
     return results
 
 
