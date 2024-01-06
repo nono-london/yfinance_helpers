@@ -27,7 +27,6 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         # https://aroussi.com/post/download-options-data
         try:
             expiries: tuple = self.yf_ticker_connector.options
-            logger.info(f'* Found {len(expiries)} expiries for ticker: {self.ticker}')
         except Exception as ex:
             logger.error(f'Error while getting options for ticker: "{self.ticker}, '
                          f'Error is: {ex}"')
@@ -35,7 +34,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             return None
 
         if len(expiries) == 0:
-            logger.info(f"- Yahoo doesn't provide an option chain for ticker: {self.ticker}")
+            logger.info(f"{self.ticker}: no option chain")
             return None
         result_df: pd.DataFrame = pd.DataFrame()
         for expiry in expiries:
@@ -64,7 +63,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         try:
             option_chain = self.yf_ticker_connector.option_chain(date=option_expiry)
         except TypeError:
-            logger.warning(f"Handled Error: Yahoo doesn't provide an option chain for ticker: {self.ticker}")
+            logger.warning(f"Handled Error: {self.ticker} no option chain")
             return None
         call_df: pd.DataFrame = option_chain.calls
         call_df['call_put'] = 'Call'
@@ -108,7 +107,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
         return options_df
 
     def upload_to_mdb(self, ticker: str, options_df: pd.DataFrame, upload_date: datetime.date):
-        logger.info(f"* Uploading {len(options_df)} options to the database")
+        logger.info(f"{ticker} - uploading {len(options_df)} options")
 
         sql_string: str = """
         INSERT INTO t_histo_options(
@@ -170,11 +169,8 @@ def update_ib_options_chain(tickers: Optional[list] = None):
     for index, ticker in tqdm(enumerate(tickers, start=1),
                               desc="Uploading options volumes",
                               total=len(tickers)):
-        logger.info(f'{"#" * 20} Option Chain for ticker {ticker}')
-        logger.info(f"* {round(index / len(tickers) * 100, 1)} % done, {index} out of {len(tickers)} tickers")
-
-        my_yahoo = YahooOptionChain(yahoo_ticker=ticker)
-        temp_df: pd.DataFrame = my_yahoo.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
+        yahoo_options = YahooOptionChain(yahoo_ticker=ticker)
+        temp_df: pd.DataFrame = yahoo_options.get_all_option_chains(select_volume_over=0, order_by_volumes=True)
         if temp_df is None:
             results.append(dict(ticker=ticker, is_success=False))
         else:
