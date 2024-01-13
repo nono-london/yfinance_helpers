@@ -32,6 +32,7 @@ class YahooOptionChain(YFinanceConnectWithTicker):
             # Seems like there is a bug when no option are available
             logger.warning(f'Handled error: while getting options for ticker: "{self.ticker}, '
                            f'Error is: {ex}"')
+            return None
         except Exception as ex:
             logger.error(f'Unhandled error: while getting options for ticker: "{self.ticker}, '
                          f'Error is: {ex}",'
