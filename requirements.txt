@@ -8,7 +8,7 @@ yfinance
 html5lib
 bs4
 # Data
-pandas
+pandas==2.1
 numpy
 # Database
 git+https://github.com/nono-london/postgres_helpers.git
